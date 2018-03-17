@@ -74,14 +74,14 @@ void main(void) {
         vec2 texCoord3 = vec2(1, 0);
         vec2 texCoord4 = vec2(1, 1);
 
-        vec4 BkLtTp = g_WorldViewProjectionMatrix * (position + vec4(0,1,0,1));
-        vec4 BkRtTp = g_WorldViewProjectionMatrix * (position + vec4(1,1,0,1));
-        vec4 BkLtBm = g_WorldViewProjectionMatrix * (position + vec4(0,0,0,1));
-        vec4 BkRtBm = g_WorldViewProjectionMatrix * (position + vec4(1,0,0,1));
-        vec4 FtLtTp = g_WorldViewProjectionMatrix * (position + vec4(0,1,1,1));
-        vec4 FtRtTp = g_WorldViewProjectionMatrix * (position + vec4(1,1,1,1));
-        vec4 FtLtBm = g_WorldViewProjectionMatrix * (position + vec4(0,0,1,1));
-        vec4 FtRtBm = g_WorldViewProjectionMatrix * (position + vec4(1,0,1,1));
+        vec4 BkLtTp = g_WorldViewProjectionMatrix * (position + vec4(0,1,0,0));
+        vec4 BkRtTp = g_WorldViewProjectionMatrix * (position + vec4(1,1,0,0));
+        vec4 BkLtBm = g_WorldViewProjectionMatrix * (position + vec4(0,0,0,0));
+        vec4 BkRtBm = g_WorldViewProjectionMatrix * (position + vec4(1,0,0,0));
+        vec4 FtLtTp = g_WorldViewProjectionMatrix * (position + vec4(0,1,1,0));
+        vec4 FtRtTp = g_WorldViewProjectionMatrix * (position + vec4(1,1,1,0));
+        vec4 FtLtBm = g_WorldViewProjectionMatrix * (position + vec4(0,0,1,0));
+        vec4 FtRtBm = g_WorldViewProjectionMatrix * (position + vec4(1,0,1,0));
 
 //        v_DebugBuffer.data[gl_PrimitiveIDIn] = blockInfo[0].textureSize;
 

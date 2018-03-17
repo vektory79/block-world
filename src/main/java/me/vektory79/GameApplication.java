@@ -61,17 +61,19 @@ public class GameApplication extends SimpleApplication {
         terrain.updateBuffers();
         rootNode.attachChild(terrain);
 
+/*
         Box mesh = new Box(new Vector3f(0, 0, 0), new Vector3f(1, 1, 1));
         Geometry geom = new Geometry("A shape", mesh); // wrap shape into geometry
         Material mat = new Material(assetManager, "Common/MatDefs/Misc/ShowNormals.j3md");   // create material
         geom.setMaterial(mat);                         // assign material to geometry
         rootNode.attachChild(geom);
+*/
 
-        cam.setLocation(new Vector3f(0, 2, 0));
-//        cam.lookAt(new Vector3f(1, 0, 1), Vector3f.UNIT_Y);
+        cam.setLocation(new Vector3f(512, 100, 512));
+        cam.lookAt(new Vector3f(1, 0, 1), Vector3f.UNIT_Y);
 //        cam.setFrustumNear(0.0001f);
 //        cam.setFrustumFar(Float.MAX_VALUE);
-        cam.lookAtDirection(new Vector3f(1, 0, 1), Vector3f.UNIT_Y);
+//        cam.lookAtDirection(new Vector3f(1, 0, 1), Vector3f.UNIT_Y);
     }
 
     @SuppressWarnings("Duplicates")
