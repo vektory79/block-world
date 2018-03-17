@@ -1,0 +1,8 @@
+*.iml
+.gradle
+.idea
+build
+native-build
+out
+*.log
+*.so

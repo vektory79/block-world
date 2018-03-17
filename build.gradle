@@ -1,0 +1,132 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'org.junit.platform:junit-platform-gradle-plugin:1.0.0'
+    }
+}
+
+group 'me.vektory79'
+version '1.0-SNAPSHOT'
+
+apply plugin: 'idea'
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'org.junit.platform.gradle.plugin'
+
+// replace resources folder to asset folder
+sourceSets {
+    main {
+        resources {
+            srcDirs= ["src/main/assets"]
+        }
+    }
+    test {
+        resources {
+            srcDirs= ["src/test/assets"]
+        }
+    }
+}
+
+// java version of tests
+compileTestJava {
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
+    options.compilerArgs += '-parameters'
+}
+
+// additional properties for native build 
+ext.applicationTitle = "jME exapmle"
+ext.applicationVendor = "No vendor"
+ext.applicationMainClass = "com.jme.example.Starter"
+
+// configuring junit tests
+ext.junitPlatformVersion = '1.0.0'
+ext.junitJupiterVersion = '5.0.0'
+ext.log4jVersion = '2.6.2'
+ext.jmeVersion = "added_new_var_type-SNAPSHOT"
+
+// configuring junit platform
+junitPlatform {
+    logManager 'org.apache.logging.log4j.jul.LogManager'
+}
+
+// define version of jME
+//def jme3 = [v: '3.2.1-stable', g: 'org.jmonkeyengine']
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    //maven { url "http://dl.bintray.com/jmonkeyengine/org.jmonkeyengine" }
+    maven { url 'https://jitpack.io' }
+//    maven { url "https://jetbrains.bintray.com/trove4j" }
+    mavenCentral()
+}
+
+dependencies {
+    // Only needed to run tests in an (IntelliJ) IDE(A) that bundles an older version
+    testCompile "org.junit.platform:junit-platform-launcher:$junitPlatformVersion"
+/*
+    compile "${jme3.g}:jme3-core:${jme3.v}"
+    compile "${jme3.g}:jme3-terrain:${jme3.v}"
+    compile "${jme3.g}:jme3-bullet:${jme3.v}"
+    compile "${jme3.g}:jme3-bullet-native:${jme3.v}"
+    compile "${jme3.g}:jme3-effects:${jme3.v}"
+    runtime "${jme3.g}:jme3-desktop:${jme3.v}"
+    runtime "${jme3.g}:jme3-lwjgl3:${jme3.v}"
+*/
+
+    compile "com.github.JavaSaBr.jmonkeyengine:jme3-core:$jmeVersion"
+    compile "com.github.JavaSaBr.jmonkeyengine:jme3-effects:$jmeVersion"
+    compile "com.github.JavaSaBr.jmonkeyengine:jme3-bullet:$jmeVersion"
+    compile "com.github.JavaSaBr.jmonkeyengine:jme3-bullet-native:$jmeVersion"
+    compile "com.github.JavaSaBr.jmonkeyengine:jme3-lwjgl3:$jmeVersion"
+    compile "com.github.JavaSaBr.jmonkeyengine:jme3-desktop:$jmeVersion"
+    compile "com.github.JavaSaBr.jmonkeyengine:jme3-terrain:$jmeVersion"
+    compile "com.github.JavaSaBr.jmonkeyengine:jme3-plugins:$jmeVersion"
+    compile "com.github.JavaSaBr.jmonkeyengine:jme3-blender:$jmeVersion"
+    compile "com.github.JavaSaBr.jmonkeyengine:jme3-jogg:$jmeVersion"
+
+//    compile 'org.jetbrains.trove4j:trove4j:20160824'
+    compile 'net.sf.trove4j:trove4j:3.0.3'
+
+    compile 'org.jetbrains:annotations-java5:15.0'
+
+//    testCompile "${jme3.g}:jme3-core:${jme3.v}"
+    testCompile "org.junit.jupiter:junit-jupiter-api:$junitJupiterVersion"
+    testCompile "org.junit.platform:junit-platform-commons:$junitPlatformVersion"
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+//    testRuntime "${jme3.g}:jme3-desktop:${jme3.v}"
+//    testRuntime "${jme3.g}:jme3-lwjgl3:${jme3.v}"
+    testRuntime "org.apache.logging.log4j:log4j-core:$log4jVersion"
+    testRuntime "org.apache.logging.log4j:log4j-jul:$log4jVersion"
+    testRuntime "org.junit.jupiter:junit-jupiter-engine:$junitJupiterVersion"
+    testRuntime "org.junit.platform:junit-platform-engine:$junitPlatformVersion"
+}
+
+ant.importBuild('build-native.xml')
+ant.basedir = new File(buildDir.getParentFile(), "native-build")
+ant.properties.javaSourceVersion = sourceCompatibility
+ant.properties.javaTargetVersion = targetCompatibility
+ant.properties.applicationJarName = name + ".jar"
+ant.properties.applicationMainClass = ext.applicationMainClass
+ant.properties.applicationVendor = ext.applicationVendor
+ant.properties.applicationTitle = ext.applicationTitle
+ant.properties.applicationVersion = version
+
+// a task to prepare dependencies for native build
+task prepareDependencies(type: Copy) {
+
+    doFirst {
+        println("delete " + "$buildDir/dependencies")
+        GFileUtils.deleteDirectory(new File("$buildDir/dependencies"))
+    }
+
+    into "$buildDir/dependencies"
+    from configurations.runtime
+}
+
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.4'
+}

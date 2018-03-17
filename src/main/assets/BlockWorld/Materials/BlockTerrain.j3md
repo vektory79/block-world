@@ -1,0 +1,26 @@
+MaterialDef Unshaded {
+
+    MaterialParameters {
+        BufferObject ChunkDescriptors
+        BufferObject BlockTypeDescriptors
+        BufferObject DebugBuffer
+        Boolean DrawTransparent
+        Texture2D ColorMap
+    }
+
+    Technique {
+        VertexShader GLSL450:   BlockWorld/Materials/BlockTerrain.vert
+        GeometryShader GLSL450:   BlockWorld/Materials/BlockTerrain.geom
+        FragmentShader GLSL450: BlockWorld/Materials/BlockTerrain.frag
+
+        WorldParameters {
+            NormalMatrix
+            WorldViewProjectionMatrix
+            CameraPosition
+            CameraDirection
+        }
+
+        Defines {
+        }
+    }
+}
