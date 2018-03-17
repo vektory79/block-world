@@ -3,10 +3,15 @@ package me.vektory79.jme3.cubeterrain;
 import com.jme3.bounding.BoundingBox;
 import com.jme3.math.Vector3f;
 import com.jme3.scene.Mesh;
+import com.jme3.util.BufferUtils;
 import me.vektory79.jme3.cubeterrain.BlockTypeDescriptorsBuffer.Type;
 import me.vektory79.jme3.cubeterrain.TerrainBlockOptionsBuffer.Face;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
+
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
+import java.nio.IntBuffer;
 
 public class TerrainChunksMesh extends Mesh {
     public static final int CHUNK_SIZE = 16;
@@ -19,16 +24,20 @@ public class TerrainChunksMesh extends Mesh {
     private final TerrainBlockTypesBuffer blockType;
     @NotNull
     private final TerrainBlockOptionsBuffer blockOptions;
+    private final SSBufferObject edgeTemplatesIndex = new SSBufferObject(2);
+    private final SSBufferObject edgeTemplates = new SSBufferObject(3);
 
-    public TerrainChunksMesh(final int chunks, final int chunkDescrBinding, final int blockTypesBinding) {
+    public TerrainChunksMesh(final int chunks) {
         setMode(Mode.Points);
-        chunkDescriptors = new ChunkDescriptorsBuffer(chunkDescrBinding, chunks);
-        blockTypeDescriptors = new BlockTypeDescriptorsBuffer(blockTypesBinding);
+        chunkDescriptors = new ChunkDescriptorsBuffer(0, chunks);
+        blockTypeDescriptors = new BlockTypeDescriptorsBuffer(1);
         blockType = new TerrainBlockTypesBuffer(this);
         blockOptions = new TerrainBlockOptionsBuffer(this);
 
         setBuffer(blockType);
         setBuffer(blockOptions);
+
+        initEdgeTemplates();
 
         // Turn off bounding box, because it is inapplicable for this mesh.
         setBound(new BoundingBox(new Vector3f(0, 0, 0), Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY));
@@ -61,6 +70,18 @@ public class TerrainChunksMesh extends Mesh {
     @Contract(pure = true)
     public BlockTypeDescriptorsBuffer getBlockTypeDescriptors() {
         return blockTypeDescriptors;
+    }
+
+    @NotNull
+    @Contract(pure = true)
+    public SSBufferObject getEdgeTemplatesIndex() {
+        return edgeTemplatesIndex;
+    }
+
+    @NotNull
+    @Contract(pure = true)
+    public SSBufferObject getEdgeTemplates() {
+        return edgeTemplates;
     }
 
     public void rebuildCulling() {
@@ -194,5 +215,143 @@ public class TerrainChunksMesh extends Mesh {
     private boolean checkNearPosition(int chunkID, Type currentType, Position nearPos) {
         Type nearType = blockType.getType(chunkID, nearPos);
         return (nearType == Type.AIR) || (nearType.isTransparent() != currentType.isTransparent());
+    }
+
+    /**
+     * Build the templates of visible edges of the block, depending on visibility bit mask.
+     * <p>
+     * <p>
+     * This templates will be used in geometry shader to generate mesh by bit mask.
+     * </p>
+     * <p>
+     * <pre>
+     *   5   4   3   2   1   0
+     * +---+---+---+---+---+---+
+     * |   |   |   |   |   |   |
+     * +---+---+---+---+---+---+
+     *   |   |   |   |   |   |
+     *   |   |   |   |   |   +- Left   (-x) face is visible.
+     *   |   |   |   |   +----- Right  (+x) face is visible.
+     *   |   |   |   +--------- Bottom (-y) face is visible.
+     *   |   |   +------------- Top    (+y) face is visible.
+     *   |   +----------------- Back   (-z) face is visible.
+     *   +--------------------- Front  (+z) face is visible.
+     *
+     *
+     *      Y               (0,1,0)            (1,1,0)          bkLtTp        bkRtTp
+     *      ^                     +------------+                   +------------+
+     *      |                     |\            \                  |\            \
+     *      |                     | \            \                 | \            \
+     *      |                     |  \(0,1,1)     \(1,1,1)         |  \ftLtTp      \ftRtTp
+     *      |                     |   +------------+               |   +------------+
+     *      |                     |   |0          2|               |   |            |
+     *      +--------->X   (0,0,0)+   | (1,0,0)+   |         bkLtBm+   |  bkRtBm+   |
+     *       \                     \  |            |                \  |            |
+     *        \                     \ |            |                 \ |            |
+     *         V                     \|1          3|                  \|            |
+     *         Z               (0,0,1)+------------+(1,0,1)      ftLtBm+------------+ftRtBm
+     * </pre>
+     */
+    private void initEdgeTemplates() {
+        int templateEdges = 0;
+        for (int i = 0; i < 64; i++) {
+            templateEdges += Integer.bitCount(i);
+        }
+
+        Position bkLtTp = Position.get(0, 1, 0);
+        Position bkRtTp = Position.get(1, 1, 0);
+        Position bkLtBm = Position.get(0, 0, 0);
+        Position bkRtBm = Position.get(1, 0, 0);
+        Position ftLtTp = Position.get(0, 1, 1);
+        Position ftRtTp = Position.get(1, 1, 1);
+        Position ftLtBm = Position.get(0, 0, 1);
+        Position ftRtBm = Position.get(1, 0, 1);
+
+        // For each bit mas value store 1 int for template address, 1 int for visible edges count and 2 int for padding.
+        ByteBuffer templatesIndexBufferData = BufferUtils.createByteBuffer(64 * 4 * Integer.BYTES);
+        // For each edge store 4 vec4 of edge quad and 1 vec4 of it's normal.
+        ByteBuffer templatesBufferData = BufferUtils.createByteBuffer(templateEdges * 4 * 4 * Float.BYTES + templateEdges * 4 * Float.BYTES);
+
+        int filledEdges = 0;
+        IntBuffer templatesIndexBuffer = templatesIndexBufferData.asIntBuffer();
+        FloatBuffer templatesBuffer = templatesBufferData.asFloatBuffer();
+        for (int i = 0; i < 64; i++) {
+            int templateAddr = filledEdges;
+            int templateLength = Integer.bitCount(i);
+            templatesIndexBuffer.put(templateAddr);
+            templatesIndexBuffer.put(templateLength);
+            // Padding
+            templatesIndexBuffer.put(0);
+            templatesIndexBuffer.put(0);
+
+            if (checkBit(i, Face.FRONT)) {
+                writePosition(templatesBuffer, ftLtTp);
+                writePosition(templatesBuffer, ftLtBm);
+                writePosition(templatesBuffer, ftRtTp);
+                writePosition(templatesBuffer, ftRtBm);
+                writePosition(templatesBuffer, Position.get(0, 0, 1));
+                filledEdges++;
+            }
+
+            if (checkBit(i, Face.BACK)) {
+                writePosition(templatesBuffer, bkRtTp);
+                writePosition(templatesBuffer, bkRtBm);
+                writePosition(templatesBuffer, bkLtTp);
+                writePosition(templatesBuffer, bkLtBm);
+                writePosition(templatesBuffer, Position.get(0, 0, -1));
+                filledEdges++;
+            }
+
+            if (checkBit(i, Face.LEFT)) {
+                writePosition(templatesBuffer, bkLtTp);
+                writePosition(templatesBuffer, bkLtBm);
+                writePosition(templatesBuffer, ftLtTp);
+                writePosition(templatesBuffer, ftLtBm);
+                writePosition(templatesBuffer, Position.get(-1, 0, 0));
+                filledEdges++;
+            }
+
+            if (checkBit(i, Face.RIGHT)) {
+                writePosition(templatesBuffer, ftRtTp);
+                writePosition(templatesBuffer, ftRtBm);
+                writePosition(templatesBuffer, bkRtTp);
+                writePosition(templatesBuffer, bkRtBm);
+                writePosition(templatesBuffer, Position.get(1, 0, 0));
+                filledEdges++;
+            }
+
+            if (checkBit(i, Face.TOP)) {
+                writePosition(templatesBuffer, bkLtTp);
+                writePosition(templatesBuffer, ftLtTp);
+                writePosition(templatesBuffer, bkRtTp);
+                writePosition(templatesBuffer, ftRtTp);
+                writePosition(templatesBuffer, Position.get(0, 1, 0));
+                filledEdges++;
+            }
+
+            if (checkBit(i, Face.BOTTOM)) {
+                writePosition(templatesBuffer, bkRtBm);
+                writePosition(templatesBuffer, ftRtBm);
+                writePosition(templatesBuffer, bkLtBm);
+                writePosition(templatesBuffer, ftLtBm);
+                writePosition(templatesBuffer, Position.get(0, -1, 0));
+                filledEdges++;
+            }
+        }
+
+        edgeTemplatesIndex.setData(templatesIndexBufferData);
+        edgeTemplates.setData(templatesBufferData);
+    }
+
+    private boolean checkBit(int value, Face face) {
+        return (value & (1 << face.getVisibilityBitShift())) != 0;
+    }
+
+    private void writePosition(FloatBuffer buffer, Position pos) {
+        buffer.put(pos.getX());
+        buffer.put(pos.getY());
+        buffer.put(pos.getZ());
+        // Padding
+        buffer.put(0);
     }
 }

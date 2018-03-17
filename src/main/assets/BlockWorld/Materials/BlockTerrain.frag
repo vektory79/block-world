@@ -1,7 +1,7 @@
 uniform sampler2D m_ColorMap;
 
 /*
-layout(std430, binding = 2) coherent buffer m_DebugBuffer
+layout(std430, binding = 5) coherent buffer m_DebugBuffer
 {
     int data[];
 } v_DebugBuffer;
@@ -12,7 +12,6 @@ in BlockVertex {
     flat int texSize;
     vec2 texCoord;
     vec3 normal;
-    vec4 color;
     flat int blockID;
 } blockVertex;
 

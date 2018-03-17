@@ -3,15 +3,10 @@ package me.vektory79.jme3.cubeterrain;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
-import com.jme3.math.Vector3f;
 import com.jme3.renderer.Camera;
-import com.jme3.renderer.RenderManager;
-import com.jme3.renderer.ViewPort;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
-import com.jme3.scene.control.AbstractControl;
-import com.jme3.scene.shape.Box;
 import com.jme3.texture.Texture;
 import me.vektory79.mapgen.MapGenerator;
 import org.jetbrains.annotations.NotNull;
@@ -33,12 +28,14 @@ public class TerrainNode extends Node {
         mat = new Material(contentMan, "Common/MatDefs/Misc/ShowNormals.j3md");   // create material
 
 
-        DebugBuffer debug = new DebugBuffer(2, chunks);
+        DebugBuffer debug = new DebugBuffer(5, chunks);
 
-        mesh = new TerrainChunksMesh(chunks, 0, 1);
+        mesh = new TerrainChunksMesh(chunks);
         material = new Material(contentMan, "BlockWorld/Materials/BlockTerrain.j3md");
         material.setShaderStorageBufferObject("ChunkDescriptors", mesh.getChunkDescriptors());
         material.setShaderStorageBufferObject("BlockTypeDescriptors", mesh.getBlockTypeDescriptors());
+        material.setShaderStorageBufferObject("EdgeTemplatesIndex", mesh.getEdgeTemplatesIndex());
+        material.setShaderStorageBufferObject("EdgeTemplates", mesh.getEdgeTemplates());
         material.setShaderStorageBufferObject("DebugBuffer", debug);
 
         Texture texture = contentMan.loadTexture("BlockWorld/Textures/block-textures.png");

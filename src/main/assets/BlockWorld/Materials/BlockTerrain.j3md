@@ -3,6 +3,8 @@ MaterialDef Unshaded {
     MaterialParameters {
         BufferObject ChunkDescriptors
         BufferObject BlockTypeDescriptors
+        BufferObject EdgeTemplatesIndex
+        BufferObject EdgeTemplates
         BufferObject DebugBuffer
         Boolean DrawTransparent
         Texture2D ColorMap

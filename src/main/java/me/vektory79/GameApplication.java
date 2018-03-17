@@ -45,7 +45,7 @@ public class GameApplication extends SimpleApplication {
 
         cam.setFrustumFar(65000f);
         if (!debug) {
-            flyCam.setMoveSpeed(5);
+            flyCam.setMoveSpeed(10);
         }
     }
 
@@ -71,8 +71,7 @@ public class GameApplication extends SimpleApplication {
 
         cam.setLocation(new Vector3f(512, 100, 512));
         cam.lookAt(new Vector3f(1, 0, 1), Vector3f.UNIT_Y);
-//        cam.setFrustumNear(0.0001f);
-//        cam.setFrustumFar(Float.MAX_VALUE);
+//        cam.setLocation(new Vector3f(0, 2, 0));
 //        cam.lookAtDirection(new Vector3f(1, 0, 1), Vector3f.UNIT_Y);
     }
 

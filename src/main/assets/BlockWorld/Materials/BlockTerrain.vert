@@ -24,7 +24,7 @@ layout(std430, binding = 1) readonly buffer m_BlockTypeDescriptors
 } v_BlockTypeDescriptors;
 
 /*
-layout(std430, binding = 2) coherent buffer m_DebugBuffer
+layout(std430, binding = 5) coherent buffer m_DebugBuffer
 {
     int data[];
 } v_DebugBuffer;
@@ -43,12 +43,7 @@ out BlockInfo {
     uint textureMappingType;
     uint textureVariants;
 
-    bool isFrontFaceVisible;
-    bool isBackFaceVisible;
-    bool isLeftFaceVisible;
-    bool isRightFaceVisible;
-    bool isTopFaceVisible;
-    bool isBottomFaceVisible;
+    uint visibilityMask;
 
     // This is combined data of front face direction and rotation.
     // It's combined becaus all of that bits is used for single raw mapping to texturing details in geometry shader.
@@ -70,7 +65,6 @@ void main() {
                 bitfieldExtract(blockID, CHUNK_DIMENSION_FACTOR, CHUNK_DIMENSION_FACTOR),
                 bitfieldExtract(blockID, 2 * CHUNK_DIMENSION_FACTOR, CHUNK_DIMENSION_FACTOR),
                 0);
-//        position = chunkPosition;
         position = chunkPosition + localBlockPosition;
 
         // Unpack block type options
@@ -84,13 +78,7 @@ void main() {
 
 //        v_DebugBuffer.data[gl_VertexID] = blockTypeDescr.size;
 
-        // Unpack block itself options
-        blockInfo.isFrontFaceVisible = bool(bitfieldExtract(blockOptions, 5, 1));
-        blockInfo.isBackFaceVisible = bool(bitfieldExtract(blockOptions, 4, 1));
-        blockInfo.isLeftFaceVisible = bool(bitfieldExtract(blockOptions, 0, 1));
-        blockInfo.isRightFaceVisible = bool(bitfieldExtract(blockOptions, 1, 1));
-        blockInfo.isTopFaceVisible = bool(bitfieldExtract(blockOptions, 3, 1));
-        blockInfo.isBottomFaceVisible = bool(bitfieldExtract(blockOptions, 2, 1));
+        blockInfo.visibilityMask = blockOptions & 63;
 
         blockInfo.blockOrientation = bitfieldExtract(blockOptions, 6, 5);
     } else {
@@ -100,13 +88,9 @@ void main() {
         blockInfo.isAnimatedTexture = false;
         blockInfo.textureMappingType = 0;
         blockInfo.textureVariants = 0;
-        blockInfo.isFrontFaceVisible = false;
-        blockInfo.isBackFaceVisible = false;
-        blockInfo.isLeftFaceVisible = false;
-        blockInfo.isRightFaceVisible = false;
-        blockInfo.isTopFaceVisible = false;
-        blockInfo.isBottomFaceVisible = false;
+
         blockInfo.blockOrientation = 0;
+        blockInfo.visibilityMask = 0;
     }
     gl_Position = position;
 }
