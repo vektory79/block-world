@@ -14,8 +14,6 @@ uniform vec3 g_CameraDirection;
 struct EdgeTemplateIndex {
     int address;
     int edges;
-    int padding0;
-    int padding1;
 };
 
 layout(std430, binding = 2) readonly buffer m_EdgeTemplatesIndex

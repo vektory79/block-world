@@ -55,26 +55,6 @@ public class TerrainNode extends Node {
         this.attachChild(transparent);
 */
         cullHint = CullHint.Never;
-
-/*
-        addControl(new AbstractControl() {
-            private long lastTime = System.nanoTime();
-
-            @Override
-            protected void controlUpdate(float tpf) {
-                long currTime = System.nanoTime();
-                if (currTime - lastTime > 1000000000) {
-                    lastTime = currTime;
-                    System.out.println(String.format("X: %f\tY: %f\tZ: %f", cam.getLocation().x, cam.getLocation().y, cam.getLocation().z));
-                }
-            }
-
-            @Override
-            protected void controlRender(RenderManager rm, ViewPort vp) {
-
-            }
-        });
-*/
     }
 
     public void updateBuffers() {

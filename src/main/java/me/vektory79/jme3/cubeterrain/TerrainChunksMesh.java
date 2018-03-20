@@ -267,8 +267,8 @@ public class TerrainChunksMesh extends Mesh {
         Position ftLtBm = Position.get(0, 0, 1);
         Position ftRtBm = Position.get(1, 0, 1);
 
-        // For each bit mas value store 1 int for template address, 1 int for visible edges count and 2 int for padding.
-        ByteBuffer templatesIndexBufferData = BufferUtils.createByteBuffer(64 * 4 * Integer.BYTES);
+        // For each bit mas value store 1 int for template address and 1 int for visible edges count.
+        ByteBuffer templatesIndexBufferData = BufferUtils.createByteBuffer(64 * 2 * Integer.BYTES);
         // For each edge store 4 vec4 of edge quad and 1 vec4 of it's normal.
         ByteBuffer templatesBufferData = BufferUtils.createByteBuffer(templateEdges * 4 * 4 * Float.BYTES + templateEdges * 4 * Float.BYTES);
 
@@ -280,9 +280,6 @@ public class TerrainChunksMesh extends Mesh {
             int templateLength = Integer.bitCount(i);
             templatesIndexBuffer.put(templateAddr);
             templatesIndexBuffer.put(templateLength);
-            // Padding
-            templatesIndexBuffer.put(0);
-            templatesIndexBuffer.put(0);
 
             if (checkBit(i, Face.FRONT)) {
                 writePosition(templatesBuffer, ftLtTp);
