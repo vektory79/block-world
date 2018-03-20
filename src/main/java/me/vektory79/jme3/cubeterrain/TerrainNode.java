@@ -3,7 +3,6 @@ package me.vektory79.jme3.cubeterrain;
 import com.jme3.asset.AssetManager;
 import com.jme3.material.Material;
 import com.jme3.material.RenderState;
-import com.jme3.renderer.Camera;
 import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
@@ -18,15 +17,9 @@ import static me.vektory79.jme3.cubeterrain.BlockTypeDescriptorsBuffer.Type.*;
 public class TerrainNode extends Node {
     private final TerrainChunksMesh mesh;
     private final Material material;
-    private Camera cam;
 
-    private final Material mat;
-
-    public TerrainNode(Camera cam, @NotNull AssetManager contentMan, String name, int chunks) {
+    public TerrainNode(@NotNull AssetManager contentMan, String name, int chunks) {
         super(name);
-        this.cam = cam;
-        mat = new Material(contentMan, "Common/MatDefs/Misc/ShowNormals.j3md");   // create material
-
 
         DebugBuffer debug = new DebugBuffer(5, chunks);
 
@@ -43,7 +36,6 @@ public class TerrainNode extends Node {
         texture.setMinFilter(Texture.MinFilter.NearestNoMipMaps);
         material.setTexture("ColorMap", texture);
         material.getAdditionalRenderState().setBlendMode(RenderState.BlendMode.Alpha);
-//        material.getAdditionalRenderState().setFaceCullMode(RenderState.FaceCullMode.Off);
 
         Geometry opaque = new Geometry(name + "_opaque");
         opaque.setQueueBucket(RenderQueue.Bucket.Opaque);
@@ -95,6 +87,7 @@ public class TerrainNode extends Node {
     }
 
     public void fillMap(double roughness, long seed) {
+        long lastTime = System.nanoTime();
         MapGenerator map = new MapGenerator(10, roughness, seed);
         map.generate();
         for (int chunkZ = 0; chunkZ < 64; chunkZ++) {
@@ -102,7 +95,10 @@ public class TerrainNode extends Node {
                 fillChunks(map, chunkX, chunkZ);
             }
         }
+        System.out.println("Build chunks:  " + (System.nanoTime() - lastTime));
+        lastTime = System.nanoTime();
         mesh.rebuildCulling();
+        System.out.println("Build culling: " + (System.nanoTime() - lastTime));
         setRequiresUpdates(true);
     }
 
@@ -134,29 +130,24 @@ public class TerrainNode extends Node {
     }
 
     private void fillChunk(MapGenerator map, int chunkX, int chunkY, int chunkZ) {
+        int chunkID = mesh.getChunkDescriptors().use(chunkX, chunkY, chunkZ);
         int xStart = chunkX << CHUNK_DIMENSION_FACTOR;
         int yStart = chunkY << CHUNK_DIMENSION_FACTOR;
         int zStart = chunkZ << CHUNK_DIMENSION_FACTOR;
 
-/*
-        Box boxMesh = new Box(new Vector3f(xStart, yStart, zStart), new Vector3f(xStart + 1, yStart + 1, zStart + 1));
-        Geometry geom = new Geometry("A shape", boxMesh); // wrap shape into geometry
-        geom.setMaterial(mat);                         // assign material to geometry
-        attachChild(geom);
-*/
-
-        for (int z = zStart; z < zStart + CHUNK_DIMENSION; z++) {
-            for (int x = xStart; x < xStart + CHUNK_DIMENSION; x++) {
-                int height = convertHeight(map.getData(x, z));
-                for (int y = yStart; y < yStart + CHUNK_DIMENSION; y++) {
-                    if (y > height) {
-                        mesh.getBlockType().setType(Position.get(x, y, z), AIR);
-                    } else if (height >= -2 && height <= 2 && y >= height - 3) {
-                        mesh.getBlockType().setType(Position.get(x, y, z), SAND);
-                    } else if (height > 2 && y >= height - 3) {
-                        mesh.getBlockType().setType(Position.get(x, y, z), DIRT);
+        for (int z = 0; z < CHUNK_DIMENSION; z++) {
+            for (int x = 0; x < CHUNK_DIMENSION; x++) {
+                int height = convertHeight(map.getData(x + xStart, z + zStart));
+                for (int y = 0; y < CHUNK_DIMENSION; y++) {
+                    int currHeight = y + yStart;
+                    if (currHeight > height) {
+                        mesh.getBlockType().setType(chunkID, Position.get(x, y, z), AIR);
+                    } else if (height >= -2 && height <= 2 && currHeight >= height - 3) {
+                        mesh.getBlockType().setType(chunkID, Position.get(x, y, z), SAND);
+                    } else if (height > 2 && currHeight >= height - 3) {
+                        mesh.getBlockType().setType(chunkID, Position.get(x, y, z), DIRT);
                     } else {
-                        mesh.getBlockType().setType(Position.get(x, y, z), STONE);
+                        mesh.getBlockType().setType(chunkID, Position.get(x, y, z), STONE);
                     }
                 }
             }

@@ -9,10 +9,7 @@ import java.io.IOException;
  */
 public class Starter {
 
-    public static void main(final String[] args) throws IOException {
-
-//        System.in.read();
-
+    public static void main(final String[] args) {
         final AppSettings settings = new AppSettings(true);
         settings.setResolution(1024, 768);
         settings.setFullscreen(false);
